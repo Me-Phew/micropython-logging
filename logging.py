@@ -472,7 +472,7 @@ class Logger:
         self.log(ERROR, message, *args, exception=exception)
 
 
-def getLogger(name="root"):
+def getLogger(name="root", level=INFO):
     """Returns a logger instance.
 
     If a logger with the given name already exists, it is returned. Otherwise,
@@ -480,13 +480,14 @@ def getLogger(name="root"):
 
     Args:
         name (str, optional): The name of the logger. Defaults to "root".
+        level (int, optional): The minimum level of messages this logger will process.
 
     Returns:
         Logger: The logger instance.
     """
     with _global_lock:
         if name not in _loggers:
-            _loggers[name] = Logger(name, level=INFO)
+            _loggers[name] = Logger(name, level=level)
         return _loggers[name]
 
 
