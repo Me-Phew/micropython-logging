@@ -2,7 +2,7 @@
 # Minimalistic logging implementation for MicroPython.
 
 # ------------------------------------------------------------------------------
-#  Last modified 26.07.2025, 12:41, micropython-logging                        -
+#  Last modified 26.07.2025, 22:40, micropython-logging                        -
 # ------------------------------------------------------------------------------
 
 import _thread
@@ -124,7 +124,6 @@ class FileHandler(Handler):
         if self._file_pointer:
             self._file_pointer.close()
             self._file_pointer = None
-        # Invalidate the cached size.
         self._file_size = -1
 
 
@@ -139,8 +138,8 @@ class RotatingFileHandler(FileHandler):
 
         if self.backup_count > 0:
             for i in range(self.backup_count - 1, -1, -1):
-                sfn = self.filename + (f".{i}" if i > 0 else "")  # Source filename
-                dfn = self.filename + f".{i + 1}"  # Destination filename
+                sfn = self.filename + (f".{i}" if i > 0 else "")
+                dfn = self.filename + f".{i + 1}"
 
                 try:
                     os.stat(sfn)
