@@ -2,7 +2,7 @@
 # Minimalistic logging implementation for MicroPython.
 
 # ------------------------------------------------------------------------------
-#  Last modified 26.07.2025, 22:56, micropython-logging                        -
+#  Last modified 26.07.2025, 23:02, micropython-logging                        -
 # ------------------------------------------------------------------------------
 
 import _thread
