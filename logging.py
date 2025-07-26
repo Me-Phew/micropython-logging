@@ -2,7 +2,7 @@
 # Minimalistic logging implementation for MicroPython.
 
 # ------------------------------------------------------------------------------
-#  Last modified 26.07.2025, 12:40, micropython-logging                        -
+#  Last modified 26.07.2025, 23:01, micropython-logging                        -
 # ------------------------------------------------------------------------------
 
 import _thread
@@ -78,14 +78,14 @@ class Handler:
         """
         raise NotImplementedError()
 
-    def emit_exception(self, exception):
+    def emit_exception(self, exception_obj):
         """Handles an exception. This can be overridden by subclasses.
 
         The default implementation does nothing. Subclasses that handle exceptions
         (like writing to a file) should override this.
 
         Args:
-            exception (Exception): The exception to log.
+            exception_obj (Exception): The exception to log.
         """
         raise NotImplementedError()
 
@@ -122,14 +122,14 @@ class StreamHandler(Handler):
             # to prevent a potential infinite loop of logging failures.
             pass
 
-    def emit_exception(self, exception):
+    def emit_exception(self, exception_obj):
         """Prints the exception and its traceback to the handler's stream.
 
         Args:
-            exception (Exception): The exception to log.
+            exception_obj (Exception): The exception to log.
         """
         try:
-            sys.print_exception(exception, self.stream)
+            sys.print_exception(exception_obj, self.stream)
         except Exception:
             # Similar to emit(), if the stream is broken, we can't do anything.
             pass
@@ -200,17 +200,17 @@ class FileHandler(Handler):
             self._handle_io_error(e, f"Error: Failed to write to log file: {self.filename}")
             self.close()
 
-    def emit_exception(self, exception):
+    def emit_exception(self, exception_obj):
         """Writes the exception and its traceback to the file.
 
         Args:
-            exception (Exception): The exception to log.
+            exception_obj (Exception): The exception to log.
         """
         if not self._open_file():
             return
 
         try:
-            sys.print_exception(exception, self._file_pointer)
+            sys.print_exception(exception_obj, self._file_pointer)
             self._file_pointer.flush()
             # The size of the exception traceback is unknown, so we must
             # invalidate our cached size and force a resync on the next emit.
@@ -337,7 +337,7 @@ class Logger:
         Args:
             record_tuple (tuple): A tuple containing (level, message, name, exception).
         """
-        level, message, name, exception = record_tuple
+        level, message, name, exception_obj = record_tuple
 
         # Acquire lock only long enough to get a copy of the shared data.
         with _global_lock:
@@ -357,7 +357,7 @@ class Logger:
             "name": name,
             "asctime": "{:04d}-{:02d}-{:02d} {:02d}:{:02d}:{:02d}".format(*time.localtime()),
             "chrono": "{:f}".format(time.ticks_diff(time.ticks_ms(), self._start_ms) / 1000),
-            "exception": exception,
+            "exception": exception_obj,
         }
 
         try:
@@ -379,8 +379,8 @@ class Logger:
                 # scheduler, calls to handler methods are serialized, making them
                 # inherently thread-safe without needing individual locks.
                 handler.emit(record_data, record_str)
-                if exception:
-                    handler.emit_exception(exception)
+                if exception_obj:
+                    handler.emit_exception(exception_obj)
 
     def log(self, level, message, *args, **kwargs):
         """Logs a message with a specific level.
@@ -411,7 +411,7 @@ class Logger:
             level,
             message,
             self._name,
-            kwargs.get("exception"),
+            kwargs.get("exception_obj"),
         )
 
         try:
@@ -468,15 +468,15 @@ class Logger:
         """
         self.log(CRITICAL, message, *args)
 
-    def exception(self, exception, message, *args):
+    def exception(self, exception_obj, message, *args):
         """Logs a message with level ERROR and includes exception information.
 
         Args:
-            exception (Exception): The exception object to log.
+            exception_obj (Exception): The exception object to log.
             message (str): The message format string.
             *args: Arguments for the message string.
         """
-        self.log(ERROR, message, *args, exception=exception)
+        self.log(ERROR, message, *args, exception_obj=exception_obj)
 
 
 def getLogger(name="root", level=INFO):
@@ -539,7 +539,7 @@ def basicConfig(
     filemode="a",
     max_bytes=0,
     backup_count=0,
-    format=None,
+    log_format=None,
 ):
     """Configures the logging system with a default setup.
 
@@ -556,7 +556,7 @@ def basicConfig(
         max_bytes (int): If greater than 0, enables rotating file logs. This is the
                          maximum size of a log file before it is rolled over.
         backup_count (int): The number of backup files to keep for rotating logs.
-        format (str or None): The format string for log messages. If `None`, the default is used.
+        log_format (str or None): The format string for log messages. If `None`, the default is used.
     """
     global _handlers, _format, _loggers
 
@@ -587,8 +587,8 @@ def basicConfig(
         root.setLevel(level)
 
         _handlers.extend(new_handlers)
-        if format is not None:
-            _format = format
+        if log_format is not None:
+            _format = log_format
 
 
 def debug(message, *args):
@@ -641,12 +641,12 @@ def critical(message, *args):
     getLogger().critical(message, *args)
 
 
-def exception(exception, message, *args):
+def exception(exception_obj, message, *args):
     """Logs a message with level ERROR and exception info on the root logger.
 
     Args:
-        exception (Exception): The exception object to log.
+        exception_obj (Exception): The exception object to log.
         message (str): The message format string.
         *args: Arguments for the message string.
     """
-    getLogger().exception(exception, message, *args)
+    getLogger().exception(exception_obj, message, *args)

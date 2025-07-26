@@ -2,7 +2,7 @@
 # Minimalistic logging implementation for MicroPython.
 
 # ------------------------------------------------------------------------------
-#  Last modified 26.07.2025, 22:40, micropython-logging                        -
+#  Last modified 26.07.2025, 22:56, micropython-logging                        -
 # ------------------------------------------------------------------------------
 
 import _thread
@@ -45,7 +45,7 @@ class Handler:
     def emit(self, record, record_str):
         raise NotImplementedError()
 
-    def emit_exception(self, exception):
+    def emit_exception(self, exception_obj):
         raise NotImplementedError()
 
     def close(self):
@@ -63,9 +63,9 @@ class StreamHandler(Handler):
         except Exception:
             pass
 
-    def emit_exception(self, exception):
+    def emit_exception(self, exception_obj):
         try:
-            sys.print_exception(exception, self.stream)
+            sys.print_exception(exception_obj, self.stream)
         except Exception:
             pass
 
@@ -108,12 +108,12 @@ class FileHandler(Handler):
             self._handle_io_error(e, f"Error: Failed to write to log file: {self.filename}")
             self.close()
 
-    def emit_exception(self, exception):
+    def emit_exception(self, exception_obj):
         if not self._open_file():
             return
 
         try:
-            sys.print_exception(exception, self._file_pointer)
+            sys.print_exception(exception_obj, self._file_pointer)
             self._file_pointer.flush()
             self._file_size = -1
         except Exception as e:
@@ -174,7 +174,7 @@ class Logger:
         self._level = level
 
     def _scheduled_emit(self, record_tuple):
-        level, message, name, exception = record_tuple
+        level, message, name, exception_obj = record_tuple
 
         with _global_lock:
             handlers_copy = list(_handlers)
@@ -190,7 +190,7 @@ class Logger:
             "name": name,
             "asctime": "{:04d}-{:02d}-{:02d} {:02d}:{:02d}:{:02d}".format(*time.localtime()),
             "chrono": "{:f}".format(time.ticks_diff(time.ticks_ms(), self._start_ms) / 1000),
-            "exception": exception,
+            "exception": exception_obj,
         }
 
         try:
@@ -205,8 +205,8 @@ class Logger:
         for handler in handlers_copy:
             if record_data["level"] >= handler.level:
                 handler.emit(record_data, record_str)
-                if exception:
-                    handler.emit_exception(exception)
+                if exception_obj:
+                    handler.emit_exception(exception_obj)
 
     def log(self, level, message, *args, **kwargs):
         if level < self._level or not _handlers:
@@ -223,7 +223,7 @@ class Logger:
             level,
             message,
             self._name,
-            kwargs.get("exception"),
+            kwargs.get("exception_obj"),
         )
 
         try:
@@ -246,8 +246,8 @@ class Logger:
     def critical(self, message, *args):
         self.log(CRITICAL, message, *args)
 
-    def exception(self, exception, message, *args):
-        self.log(ERROR, message, *args, exception=exception)
+    def exception(self, exception_obj, message, *args):
+        self.log(ERROR, message, *args, exception_obj=exception_obj)
 
 
 def getLogger(name="root", level=INFO):
@@ -283,7 +283,7 @@ def basicConfig(
     filemode="a",
     max_bytes=0,
     backup_count=0,
-    format=None,
+    log_format=None,
 ):
     global _handlers, _format, _loggers
 
@@ -311,8 +311,8 @@ def basicConfig(
         root.setLevel(level)
 
         _handlers.extend(new_handlers)
-        if format is not None:
-            _format = format
+        if log_format is not None:
+            _format = log_format
 
 
 def debug(message, *args):
@@ -335,5 +335,5 @@ def critical(message, *args):
     getLogger().critical(message, *args)
 
 
-def exception(exception, message, *args):
-    getLogger().exception(exception, message, *args)
+def exception(exception_obj, message, *args):
+    getLogger().exception(exception_obj, message, *args)
