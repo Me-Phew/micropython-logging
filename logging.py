@@ -1,3 +1,10 @@
+# logging.py
+# Minimalistic logging implementation for MicroPython.
+
+# ------------------------------------------------------------------------------
+#  Last modified 26.07.2025, 12:40, micropython-logging                        -
+# ------------------------------------------------------------------------------
+
 import _thread
 import os
 import sys
