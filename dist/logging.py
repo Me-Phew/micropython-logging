@@ -2,7 +2,7 @@
 # Minimalistic logging implementation for MicroPython.
 
 # ------------------------------------------------------------------------------
-#  Last modified 4.08.2025, 10:40, micropython-logging                         -
+#  Last modified 4.08.2025, 10:53, micropython-logging                         -
 # ------------------------------------------------------------------------------
 
 import _thread
@@ -229,7 +229,10 @@ class Logger:
         try:
             schedule(self._scheduled_emit, record_tuple)
         except RuntimeError:
-            print("WARNING: Log message dropped, most likely scheduler queue is full.")
+            # Most likely scheduler queue is full, so we just ignore the log message.
+            # Printing here could cause a recursion error if the logger is used in an exception handler.
+            # It would also be a problem in an ISR context.
+            pass
 
     def debug(self, message, *args):
         self.log(DEBUG, message, *args)
