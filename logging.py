@@ -2,14 +2,14 @@
 # Minimalistic logging implementation for MicroPython.
 
 # ------------------------------------------------------------------------------
-#  Last modified 4.08.2025, 10:53, micropython-logging                         -
+#  Last modified 27.08.2025, 18:02, micropython-logging                        -
 # ------------------------------------------------------------------------------
 
 import _thread
 import os
 import sys
-import time
 
+import utime
 from micropython import const, schedule
 
 # --- Logging Levels ---
@@ -315,7 +315,7 @@ class Logger:
         """
         self._name = name
         self._level = level
-        self._start_ms = time.ticks_ms()
+        self._start_ms = utime.ticks_ms()
 
     def setLevel(self, level):
         """Sets the logging level for this logger.
@@ -355,8 +355,8 @@ class Logger:
             "level": level,
             "message": message,
             "name": name,
-            "asctime": "{:04d}-{:02d}-{:02d} {:02d}:{:02d}:{:02d}".format(*time.localtime()),
-            "chrono": "{:f}".format(time.ticks_diff(time.ticks_ms(), self._start_ms) / 1000),
+            "asctime": "{:04d}-{:02d}-{:02d} {:02d}:{:02d}:{:02d}".format(*utime.localtime()),
+            "chrono": "{:f}".format(utime.ticks_diff(utime.ticks_ms(), self._start_ms) / 1000),
             "exception": exception_obj,
         }
 
