@@ -2,7 +2,7 @@
 # Minimalistic logging implementation for MicroPython.
 
 # ------------------------------------------------------------------------------
-#  Last modified 27.08.2025, 18:02, micropython-logging                        -
+#  Last modified 30.08.2025, 00:11, micropython-logging                        -
 # ------------------------------------------------------------------------------
 
 import _thread
@@ -32,15 +32,16 @@ _format = "%(levelname)s:%(name)s:%(message)s"
 _loggers = dict()
 
 
+def _handle_io_error(e, msg=""):
+    print("--- Logging I/O Error ---")
+    if msg:
+        print(msg)
+    sys.print_exception(e)
+
+
 class Handler:
     def __init__(self, level=NOTSET):
         self.level = level
-
-    def _handle_io_error(self, e, msg=""):
-        print("--- Logging I/O Error ---")
-        if msg:
-            print(msg)
-        sys.print_exception(e)
 
     def emit(self, record, record_str):
         raise NotImplementedError()
@@ -85,7 +86,7 @@ class FileHandler(Handler):
                 self._file_pointer = open(self.filename, self.filemode)
                 self._file_size = -1
             except Exception as e:
-                self._handle_io_error(e, f"Error: Failed to open log file: {self.filename}")
+                _handle_io_error(e, f"Error: Failed to open log file: {self.filename}")
                 return False
 
         if self._file_size == -1:
@@ -105,7 +106,7 @@ class FileHandler(Handler):
             self._file_size += bytes_written
             self._file_pointer.flush()
         except Exception as e:
-            self._handle_io_error(e, f"Error: Failed to write to log file: {self.filename}")
+            _handle_io_error(e, f"Error: Failed to write to log file: {self.filename}")
             self.close()
 
     def emit_exception(self, exception_obj):
@@ -117,7 +118,7 @@ class FileHandler(Handler):
             self._file_pointer.flush()
             self._file_size = -1
         except Exception as e:
-            self._handle_io_error(e, f"Error: Failed to write exception to log file: {self.filename}")
+            _handle_io_error(e, f"Error: Failed to write exception to log file: {self.filename}")
             self.close()
 
     def close(self):

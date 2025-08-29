@@ -2,7 +2,7 @@
 # Minimalistic logging implementation for MicroPython.
 
 # ------------------------------------------------------------------------------
-#  Last modified 30.08.2025, 00:04, micropython-logging                        -
+#  Last modified 30.08.2025, 00:11, micropython-logging                        -
 # ------------------------------------------------------------------------------
 
 import _thread
@@ -39,6 +39,23 @@ _format = "%(levelname)s:%(name)s:%(message)s"
 _loggers = dict()
 
 
+# * -- Internal helper functions --
+def _handle_io_error(e, msg=""):
+    """A simple, non-crashing way to handle I/O errors during logging.
+
+    This prints the error to the default `sys.stdout` instead of trying to use
+    a potentially broken logging stream.
+
+    Args:
+        e (Exception): The I/O exception that occurred.
+        msg (str, optional): An additional message to print. Defaults to "".
+    """
+    print("--- Logging I/O Error ---")
+    if msg:
+        print(msg)
+    sys.print_exception(e)
+
+
 # * -- Base Handler class --
 class Handler:
     """Base class for all log handlers.
@@ -53,21 +70,6 @@ class Handler:
             level (int): The minimum level of messages this handler will process.
         """
         self.level = level
-
-    def _handle_io_error(self, e, msg=""):
-        """A simple, non-crashing way to handle I/O errors during logging.
-
-        This prints the error to the default `sys.stdout` instead of trying to use
-        a potentially broken logging stream.
-
-        Args:
-            e (Exception): The I/O exception that occurred.
-            msg (str, optional): An additional message to print. Defaults to "".
-        """
-        print("--- Logging I/O Error ---")
-        if msg:
-            print(msg)
-        sys.print_exception(e)
 
     def emit(self, record, record_str):
         """Handles a log record. This must be overridden by subclasses.
@@ -169,7 +171,7 @@ class FileHandler(Handler):
                 # Mark size as unknown to force a check after opening.
                 self._file_size = -1
             except Exception as e:
-                self._handle_io_error(e, f"Error: Failed to open log file: {self.filename}")
+                _handle_io_error(e, f"Error: Failed to open log file: {self.filename}")
                 return False
 
         if self._file_size == -1:  # A value of -1 indicates the size needs to be resynchronized.
@@ -198,7 +200,7 @@ class FileHandler(Handler):
             self._file_size += bytes_written
             self._file_pointer.flush()
         except Exception as e:
-            self._handle_io_error(e, f"Error: Failed to write to log file: {self.filename}")
+            _handle_io_error(e, f"Error: Failed to write to log file: {self.filename}")
             self.close()
 
     def emit_exception(self, exception_obj):
@@ -217,7 +219,7 @@ class FileHandler(Handler):
             # invalidate our cached size and force a resync on the next emit.
             self._file_size = -1
         except Exception as e:
-            self._handle_io_error(e, f"Error: Failed to write exception to log file: {self.filename}")
+            _handle_io_error(e, f"Error: Failed to write exception to log file: {self.filename}")
             self.close()
 
     def close(self):
