@@ -2,7 +2,7 @@
 # Minimalistic logging implementation for MicroPython.
 
 # ------------------------------------------------------------------------------
-#  Last modified 27.08.2025, 18:02, micropython-logging                        -
+#  Last modified 30.08.2025, 00:04, micropython-logging                        -
 # ------------------------------------------------------------------------------
 
 import _thread
@@ -12,7 +12,7 @@ import sys
 import utime
 from micropython import const, schedule
 
-# --- Logging Levels ---
+# * -- Module-level constants and globals --
 # These are the standard logging levels, compatible with CPython's logging module.
 CRITICAL = const(50)
 ERROR = const(40)
@@ -21,7 +21,6 @@ INFO = const(20)
 DEBUG = const(10)
 NOTSET = const(0)
 
-# --- Module-level constants and globals ---
 _STAT_SIZE_INDEX = 6  # Index for file size in the tuple returned by os.stat()
 
 _level_str = {CRITICAL: "CRITICAL", ERROR: "ERROR", WARNING: "WARNING", INFO: "INFO", DEBUG: "DEBUG"}
@@ -40,6 +39,7 @@ _format = "%(levelname)s:%(name)s:%(message)s"
 _loggers = dict()
 
 
+# * -- Base Handler class --
 class Handler:
     """Base class for all log handlers.
 
@@ -94,6 +94,7 @@ class Handler:
         pass
 
 
+# * -- Different types of handlers --
 class StreamHandler(Handler):
     """A handler that logs records to a stream (e.g., `sys.stderr`)."""
 
@@ -301,6 +302,7 @@ class RotatingFileHandler(FileHandler):
         super().emit(record, record_str)
 
 
+# * -- Logger class - the core of the library --
 class Logger:
     """The primary class for application code to interact with the logging system."""
 
@@ -480,6 +482,7 @@ class Logger:
         self.log(ERROR, message, *args, exception_obj=exception_obj)
 
 
+# * -- Global public functions - api of the library --
 def getLogger(name="root", level=INFO):
     """Returns a logger instance.
 
